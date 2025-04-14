@@ -1,6 +1,7 @@
 import express from 'express'
 import User from '../models/User.js';
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 
 const router = express.Router();
 
@@ -27,6 +28,31 @@ router.post('/register', async (req,res) => {
         return res.status(200).json({success : true , message : "User created successfully"})
     } catch (error) {
             return res.status(500).json({success:false,message : "Error is adding user"})        
+    }
+})
+
+router.post('/login', async (req,res) => {
+    try {
+        const {email,password} = req.body;
+
+        const user = await User.findOne({email})
+        if(!user){
+            return res.status(401).json({success : false,message : "User doesn't exist"})
+        }
+
+        const checkPassword = await bcrypt.compare(password, user.password)
+
+        if(!checkPassword){
+            return res.status(401).json({success : false,message : "Wrong password"})
+        }
+        
+        const token = jwt.sign({id : user._id}, process.env.JWT_SECRET,{
+            expiresIn : "5d"
+        })
+
+        return res.status(200).json({success : true ,token,user: {name:user.name} , message : "Login successfully"})
+    } catch (error) {
+            return res.status(500).json({success:false,message : "Error is Login server"})        
     }
 })
 
